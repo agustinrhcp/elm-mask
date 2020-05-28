@@ -1,20 +1,13 @@
 module MaskTest exposing (suite)
 
--- import Fuzz exposing (Fuzzer, int, list, string)
-
 import Expect
-import Mask exposing (Pattern(..), Token(..))
+import Mask exposing (Pattern, patternFromString)
 import Test exposing (Test, describe, test)
 
 
-phonePattern : String
+phonePattern : Pattern
 phonePattern =
-    "(###)"
-
-
-phonePatternPatter : Pattern
-phonePatternPatter =
-    Pattern [ Symbol '(', Digit, Digit, Digit, Symbol ')' ]
+    patternFromString "(###)"
 
 
 suite : Test
@@ -23,37 +16,45 @@ suite =
         [ describe "Mask.mask"
             [ test "with an empty string starts applying the mask" <|
                 \_ ->
-                    Mask.mask "" phonePattern
+                    Mask.mask phonePattern ""
                         |> Expect.equal ""
             , test "with a couple of digits" <|
                 \_ ->
-                    Mask.mask "12" phonePattern
+                    Mask.mask phonePattern "12"
                         |> Expect.equal "(12"
             , test "with a complete set of digits" <|
                 \_ ->
-                    Mask.mask "123" phonePattern
+                    Mask.mask phonePattern "123"
                         |> Expect.equal "(123)"
             , test "with more digits than expected" <|
                 \_ ->
-                    Mask.mask "1234" phonePattern
+                    Mask.mask phonePattern "1234"
                         |> Expect.equal "(123)"
+            , test "when masking a letter but expecting a digit" <|
+                \_ ->
+                    Mask.mask phonePattern "12ab"
+                        |> Expect.equal "(12"
             ]
         , describe "Mask.unMask"
             [ test "with an empty string returns an empty string" <|
                 \_ ->
-                    Mask.unMask [] phonePatternPatter
+                    Mask.unMask phonePattern ""
                         |> Expect.equal ""
             , test "with a couple of digits" <|
                 \_ ->
-                    Mask.unMask (String.toList "(12") phonePatternPatter
+                    Mask.unMask phonePattern "(12"
                         |> Expect.equal "12"
             , test "a complete string" <|
                 \_ ->
-                    Mask.unMask (String.toList "(123)") phonePatternPatter
+                    Mask.unMask phonePattern "(123)"
                         |> Expect.equal "123"
             , test "with a longer string than expected" <|
                 \_ ->
-                    Mask.unMask (String.toList "(1234)") phonePatternPatter
+                    Mask.unMask phonePattern "(1234)"
                         |> Expect.equal "123"
+            , test "when unmasking a letter but expecting a digit" <|
+                \_ ->
+                    Mask.unMask phonePattern "(1ab)"
+                        |> Expect.equal "1"
             ]
         ]

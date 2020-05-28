@@ -1,4 +1,4 @@
-module Mask exposing (Pattern(..), Token(..), mask, unMask)
+module Mask exposing (Pattern, mask, patternFromString, unMask)
 
 import Html exposing (Attribute)
 import Html.Attributes as Attributes
@@ -10,33 +10,40 @@ type Pattern
 
 type Token
     = Symbol Char
-    | Character
+    | Any
     | Digit
 
 
-phonePattern : Pattern
-phonePattern =
-    Pattern [ Symbol '(', Digit, Digit, Digit, Symbol ')' ]
+type alias Config =
+    { digitChar : Char
+    , anyChar : Char
+    }
 
 
-tokens : String -> List Token
-tokens string =
+defaultConfig : Config
+defaultConfig =
+    { digitChar = '#'
+    , anyChar = '*'
+    }
+
+
+tokens : Config -> String -> List Token
+tokens conf string =
     string
         |> String.toList
-        |> List.map charToToken
+        |> List.map (charToToken conf)
 
 
-charToToken : Char -> Token
-charToToken char =
-    case char of
-        '#' ->
-            Digit
+charToToken : Config -> Char -> Token
+charToToken { digitChar, anyChar } char =
+    if char == digitChar then
+        Digit
 
-        'X' ->
-            Character
+    else if char == anyChar then
+        Any
 
-        symbol ->
-            Symbol symbol
+    else
+        Symbol char
 
 
 maskValue : String -> Attribute msg
@@ -45,64 +52,85 @@ maskValue val =
         Attributes.value ""
 
     else
-        Attributes.value <| mask val "(###)"
+        val
+            |> mask (patternFromString "(###)")
+            |> Attributes.value
 
 
-mask : String -> String -> String
-mask stringInput stringPattern =
+patternFromStringWithConf : Config -> String -> Pattern
+patternFromStringWithConf conf string =
+    Pattern <| tokens conf string
+
+
+patternFromString : String -> Pattern
+patternFromString =
+    patternFromStringWithConf defaultConfig
+
+
+mask : Pattern -> String -> String
+mask (Pattern pattern) stringInput =
     if String.isEmpty stringInput then
         ""
 
     else
-        tokens stringPattern
-            |> recMask (String.toList stringInput)
+        pattern
+            |> maskRec (String.toList stringInput)
 
 
-recMask : List Char -> List Token -> String
-recMask input pattern =
+maskRec : List Char -> List Token -> String
+maskRec input pattern =
     case ( input, pattern ) of
-        ( x :: xs, y :: ys ) ->
-            case y of
+        ( char :: remainingChar, token :: remainingTokens ) ->
+            case token of
                 Digit ->
-                    case x |> String.fromChar |> String.toInt of
-                        Just int ->
-                            String.fromInt int ++ recMask xs ys
+                    char
+                        |> String.fromChar
+                        |> String.toInt
+                        |> Maybe.map (\int -> String.fromInt int ++ maskRec remainingChar remainingTokens)
+                        |> Maybe.withDefault ""
 
-                        Nothing ->
-                            ""
-
-                Character ->
-                    String.fromChar x ++ recMask xs ys
+                Any ->
+                    String.fromChar char ++ maskRec remainingChar remainingTokens
 
                 Symbol a ->
-                    String.fromChar a ++ recMask input ys
+                    String.fromChar a ++ maskRec input remainingTokens
 
         ( _, [] ) ->
             ""
 
-        ( [], y :: ys ) ->
-            case y of
-                Symbol char ->
-                    String.fromChar char ++ recMask input ys
+        ( [], token :: remainingTokens ) ->
+            case token of
+                Symbol symbol ->
+                    String.fromChar symbol ++ maskRec input remainingTokens
 
                 _ ->
                     ""
 
 
-unMask : List Char -> Pattern -> String
-unMask input (Pattern pattern) =
+unMask : Pattern -> String -> String
+unMask (Pattern pattern) string =
+    pattern
+        |> unMaskRec (String.toList string)
+
+
+unMaskRec : List Char -> List Token -> String
+unMaskRec input pattern =
     case ( input, pattern ) of
-        ( x :: xs, y :: ys ) ->
-            case y of
+        ( char :: remainingChar, token :: remainingTokens ) ->
+            case token of
                 Digit ->
-                    String.fromChar x ++ unMask xs (Pattern ys)
+                    char
+                        |> String.fromChar
+                        |> String.toInt
+                        |> Maybe.map (\int -> String.fromInt int ++ unMaskRec remainingChar remainingTokens)
+                        |> Maybe.withDefault ""
 
-                Character ->
-                    String.fromChar x ++ unMask xs (Pattern ys)
+                Any ->
+                    String.fromChar char ++ unMaskRec remainingChar remainingTokens
 
-                Symbol char ->
-                    if char == x then
-                        unMask xs (Pattern ys)
+                Symbol symbol ->
+                    if symbol == char then
+                        unMaskRec remainingChar remainingTokens
 
                     else
                         ""
