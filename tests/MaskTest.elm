@@ -3,7 +3,7 @@ module MaskTest exposing (suite)
 import Expect
 import Html
 import Html.Attributes as Attributes
-import Mask exposing (Pattern, maskedValue, onMaskedInput, patternFromString)
+import Mask exposing (Pattern, fromString, maskedValue, onMaskedInput)
 import Test exposing (Test, describe, test)
 import Test.Html.Event as Event
 import Test.Html.Query as Query
@@ -12,7 +12,7 @@ import Test.Html.Selector as Selector
 
 phonePattern : Pattern
 phonePattern =
-    patternFromString "(###)"
+    fromString "(###)"
 
 
 type Msg

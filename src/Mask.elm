@@ -1,10 +1,42 @@
-module Mask exposing (Config, Pattern, mask, maskedValue, onMaskedInput, patternFromString, unMask)
+module Mask exposing
+    ( Pattern
+    , fromString
+    , mask, unMask
+    , maskedValue, onMaskedInput
+    )
+
+{-| Simple libreary to mask strings and inputs.
+
+
+# Pattern
+
+@docs Pattern
+
+
+# Helpers
+
+@docs fromString
+
+
+# Masking / Unmasking strings
+
+@docs mask, unMask
+
+
+# Input helpers
+
+@docs maskedValue, onMaskedInput
+
+-}
 
 import Html exposing (Attribute)
 import Html.Attributes as Attributes
 import Html.Events exposing (onInput)
 
 
+{-| Represent the pattern that will be applied to the
+string to mask
+-}
 type Pattern
     = Pattern (List Token)
 
@@ -47,6 +79,70 @@ charToToken { digitChar, anyChar } char =
         Symbol char
 
 
+fromStringWithConf : Config -> String -> Pattern
+fromStringWithConf conf string =
+    Pattern <| tokens conf string
+
+
+{-| Creates a pattern from a String, using
+
+
+# to match digits and \* for any character.
+
+    phonePattern : Pattern
+
+    phonePatter =
+        Mask.fromString "(###)###-####"
+
+-}
+fromString : String -> Pattern
+fromString =
+    fromStringWithConf defaultConfig
+
+
+{-| Masks a string, useful for displaying formatted data.
+
+    maskPhone : String -> String
+    maskPhone phoneNumber =
+        Mask.mask phonePattern phoneNumber
+
+    maskPhone "1231231234" == "(123)123-1234"
+
+-}
+mask : Pattern -> String -> String
+mask (Pattern pattern) stringInput =
+    if String.isEmpty stringInput then
+        ""
+
+    else
+        pattern
+            |> maskRec (String.toList stringInput)
+
+
+{-| Unmasks a string.
+
+    unmaskPhone : String -> String
+    unmaskPhone phoneNumber =
+        Mask.unMask phonePattern phoneNumber
+
+    maskPhone "(123)123-1234" == "1231231234"
+
+-}
+unMask : Pattern -> String -> String
+unMask (Pattern pattern) string =
+    if String.isEmpty string then
+        ""
+
+    else
+        pattern
+            |> unMaskRec (String.toList string)
+
+
+{-| Similar to Html.Attributes.value, but applying the provided pattern
+
+    input [ maskedValue phonePattern model.phoneNumber ] []
+
+-}
 maskedValue : Pattern -> String -> Attribute msg
 maskedValue pattern val =
     if String.isEmpty val then
@@ -58,26 +154,18 @@ maskedValue pattern val =
             |> Attributes.value
 
 
-patternFromStringWithConf : Config -> String -> Pattern
-patternFromStringWithConf conf string =
-    Pattern <| tokens conf string
+{-| Similar to Html.Events.onInput, but unmasking a masked value.
+It requires the previous value as the second argument
 
+    type Msg = SetPhone String
 
-patternFromString : String -> Pattern
-patternFromString =
-    patternFromStringWithConf defaultConfig
+    input
+        [ maskedValue phonePattern model.phoneNumber
+        , onMaskedValue phonePattern model.phoneNumber SetPhoneNumber
+        ]
+        []
 
-
-mask : Pattern -> String -> String
-mask (Pattern pattern) stringInput =
-    if String.isEmpty stringInput then
-        ""
-
-    else
-        pattern
-            |> maskRec (String.toList stringInput)
-
-
+-}
 onMaskedInput : Pattern -> String -> (String -> msg) -> Attribute msg
 onMaskedInput pattern currentValue msg =
     onInput (unMaskValue pattern currentValue >> msg)
@@ -126,12 +214,6 @@ maskRec input pattern =
 
                 _ ->
                     ""
-
-
-unMask : Pattern -> String -> String
-unMask (Pattern pattern) string =
-    pattern
-        |> unMaskRec (String.toList string)
 
 
 unMaskRec : List Char -> List Token -> String
