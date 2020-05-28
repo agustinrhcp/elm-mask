@@ -3,8 +3,9 @@ module MaskTest exposing (suite)
 import Expect
 import Html
 import Html.Attributes as Attributes
-import Mask exposing (Pattern, maskedValue, patternFromString)
+import Mask exposing (Pattern, maskedValue, onMaskedInput, patternFromString)
 import Test exposing (Test, describe, test)
+import Test.Html.Event as Event
 import Test.Html.Query as Query
 import Test.Html.Selector as Selector
 
@@ -12,6 +13,10 @@ import Test.Html.Selector as Selector
 phonePattern : Pattern
 phonePattern =
     patternFromString "(###)"
+
+
+type Msg
+    = Change String
 
 
 suite : Test
@@ -72,5 +77,19 @@ suite =
                     Html.input [ maskedValue phonePattern "1" ] []
                         |> Query.fromHtml
                         |> Query.has [ Selector.attribute <| Attributes.value "(1" ]
+            ]
+        , describe "Mask.onMaskedInput"
+            [ test "when typing" <|
+                \() ->
+                    Html.input [ Attributes.value "(12", onMaskedInput phonePattern "12" Change ] []
+                        |> Query.fromHtml
+                        |> Event.simulate (Event.input "(123)")
+                        |> Event.expect (Change "123")
+            , test "when deleting" <|
+                \() ->
+                    Html.input [ Attributes.value "(123)", onMaskedInput phonePattern "123" Change ] []
+                        |> Query.fromHtml
+                        |> Event.simulate (Event.input "(123")
+                        |> Event.expect (Change "12")
             ]
         ]

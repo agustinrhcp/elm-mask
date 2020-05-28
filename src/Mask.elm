@@ -1,7 +1,8 @@
-module Mask exposing (Config, Pattern, mask, maskedValue, patternFromString, unMask)
+module Mask exposing (Config, Pattern, mask, maskedValue, onMaskedInput, patternFromString, unMask)
 
 import Html exposing (Attribute)
 import Html.Attributes as Attributes
+import Html.Events exposing (onInput)
 
 
 type Pattern
@@ -75,6 +76,23 @@ mask (Pattern pattern) stringInput =
     else
         pattern
             |> maskRec (String.toList stringInput)
+
+
+onMaskedInput : Pattern -> String -> (String -> msg) -> Attribute msg
+onMaskedInput pattern currentValue msg =
+    onInput (unMaskValue pattern currentValue >> msg)
+
+
+unMaskValue : Pattern -> String -> String -> String
+unMaskValue pattern currentValue newValue =
+    if String.isEmpty newValue then
+        ""
+
+    else if mask pattern currentValue > newValue then
+        newValue |> unMask pattern |> String.dropRight 1
+
+    else
+        unMask pattern newValue
 
 
 maskRec : List Char -> List Token -> String
