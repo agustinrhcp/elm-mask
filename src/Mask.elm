@@ -88,6 +88,9 @@ unMaskValue pattern currentValue newValue =
     if String.isEmpty newValue then
         ""
 
+    else if String.isEmpty currentValue then
+        newValue |> mask pattern |> unMask pattern
+
     else if mask pattern currentValue > newValue then
         newValue |> unMask pattern |> String.dropRight 1
 

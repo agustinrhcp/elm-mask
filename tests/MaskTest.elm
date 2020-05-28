@@ -91,5 +91,11 @@ suite =
                         |> Query.fromHtml
                         |> Event.simulate (Event.input "(123")
                         |> Event.expect (Change "12")
+            , test "when empty" <|
+                \() ->
+                    Html.input [ Attributes.value "", onMaskedInput phonePattern "" Change ] []
+                        |> Query.fromHtml
+                        |> Event.simulate (Event.input "1")
+                        |> Event.expect (Change "1")
             ]
         ]
