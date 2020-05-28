@@ -1,8 +1,12 @@
 module MaskTest exposing (suite)
 
 import Expect
-import Mask exposing (Pattern, patternFromString)
+import Html
+import Html.Attributes as Attributes
+import Mask exposing (Pattern, maskedValue, patternFromString)
 import Test exposing (Test, describe, test)
+import Test.Html.Query as Query
+import Test.Html.Selector as Selector
 
 
 phonePattern : Pattern
@@ -56,5 +60,17 @@ suite =
                 \_ ->
                     Mask.unMask phonePattern "(1ab)"
                         |> Expect.equal "1"
+            ]
+        , describe "Mask.maskValue"
+            [ test "with a complete input sets the masked value" <|
+                \() ->
+                    Html.input [ maskedValue phonePattern "123" ] []
+                        |> Query.fromHtml
+                        |> Query.has [ Selector.attribute <| Attributes.value "(123)" ]
+            , test "with a partial input sets the partial masked value" <|
+                \() ->
+                    Html.input [ maskedValue phonePattern "1" ] []
+                        |> Query.fromHtml
+                        |> Query.has [ Selector.attribute <| Attributes.value "(1" ]
             ]
         ]

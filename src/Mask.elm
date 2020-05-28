@@ -1,4 +1,4 @@
-module Mask exposing (Pattern, mask, patternFromString, unMask)
+module Mask exposing (Config, Pattern, mask, maskedValue, patternFromString, unMask)
 
 import Html exposing (Attribute)
 import Html.Attributes as Attributes
@@ -46,14 +46,14 @@ charToToken { digitChar, anyChar } char =
         Symbol char
 
 
-maskValue : String -> Attribute msg
-maskValue val =
+maskedValue : Pattern -> String -> Attribute msg
+maskedValue pattern val =
     if String.isEmpty val then
         Attributes.value ""
 
     else
         val
-            |> mask (patternFromString "(###)")
+            |> mask pattern
             |> Attributes.value
 
 
