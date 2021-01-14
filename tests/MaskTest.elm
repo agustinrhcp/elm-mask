@@ -4,7 +4,7 @@ import Expect
 import Html
 import Html.Attributes as Attributes
 import Mask exposing (Pattern, fromString, maskedValue, onMaskedInput)
-import Test exposing (Test, describe, test)
+import Test exposing (Test, describe, only, test)
 import Test.Html.Event as Event
 import Test.Html.Query as Query
 import Test.Html.Selector as Selector
@@ -85,12 +85,18 @@ suite =
                         |> Query.fromHtml
                         |> Event.simulate (Event.input "(123)")
                         |> Event.expect (Change "123")
-            , test "when deleting" <|
+            , test "when deleting added chars" <|
                 \() ->
                     Html.input [ Attributes.value "(123)", onMaskedInput phonePattern "123" Change ] []
                         |> Query.fromHtml
                         |> Event.simulate (Event.input "(123")
                         |> Event.expect (Change "12")
+            , test "when deleting actual chars" <|
+                \() ->
+                    Html.input [ Attributes.value "(12", onMaskedInput phonePattern "12" Change ] []
+                        |> Query.fromHtml
+                        |> Event.simulate (Event.input "(1")
+                        |> Event.expect (Change "1")
             , test "when empty" <|
                 \() ->
                     Html.input [ Attributes.value "", onMaskedInput phonePattern "" Change ] []

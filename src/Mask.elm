@@ -172,18 +172,28 @@ onMaskedInput pattern currentValue msg =
 
 
 unMaskValue : Pattern -> String -> String -> String
-unMaskValue pattern currentValue newValue =
-    if String.isEmpty newValue then
+unMaskValue pattern currentValue maskedNewValue =
+    if String.isEmpty maskedNewValue then
         ""
 
     else if String.isEmpty currentValue then
-        newValue |> mask pattern |> unMask pattern
+        maskedNewValue |> mask pattern |> unMask pattern
 
-    else if mask pattern currentValue > newValue then
-        newValue |> unMask pattern |> String.dropRight 1
+    else if mask pattern currentValue > maskedNewValue then
+        -- When the current masked value's length is > than the new masked value
+        -- The new value is being deleted
+        let
+            unmaskedNewValue =
+                unMask pattern maskedNewValue
+        in
+        if currentValue > unmaskedNewValue then
+            unmaskedNewValue
+
+        else
+            currentValue |> String.dropRight 1
 
     else
-        unMask pattern newValue
+        unMask pattern maskedNewValue
 
 
 maskRec : List Char -> List Token -> String
