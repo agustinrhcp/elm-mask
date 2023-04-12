@@ -177,7 +177,11 @@ unMaskValue pattern currentValue maskedNewValue =
         ""
 
     else if String.isEmpty currentValue then
-        maskedNewValue |> mask pattern |> unMask pattern
+        if isMasked pattern maskedNewValue then
+            maskedNewValue |> unMask pattern
+
+        else
+            maskedNewValue |> mask pattern |> unMask pattern
 
     else if mask pattern currentValue > maskedNewValue then
         -- When the current masked value's length is > than the new masked value
@@ -253,3 +257,11 @@ unMaskRec input pattern =
 
         ( [], _ ) ->
             ""
+
+
+isMasked : Pattern -> String -> Bool
+isMasked pattern text =
+    text
+        |> unMask pattern
+        |> mask pattern
+        |> (==) text
